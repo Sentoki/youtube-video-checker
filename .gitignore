@@ -1,0 +1,4 @@
+.idea
+do_debug_log.enable
+logs/
+!logs/.gitkeep
