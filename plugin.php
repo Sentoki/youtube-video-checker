@@ -28,6 +28,8 @@ $break = 1;
 add_action('search-videos-in-posts', 'searchVideosInPost');
 add_action('check-by-api', 'checkByApi');
 
+register_activation_hook(__FILE__, [\PetrovEgor\Database::class, 'updateSchema']);
+
 
 function indexPage()
 {
@@ -52,12 +54,40 @@ function allVideos()
 
 function unavailableVideos()
 {
-    echo "unavailableVideos";
+    $posts = \PetrovEgor\Database::getPostsWithUnavailableVideos();
+    $template = \PetrovEgor\templates\Template::getInstance();
+    $template->setTemplate('UnavailableVideos.php');
+    $template->setParams([
+        'posts' => $posts,
+    ]);
+    $template->render();
 }
 
 function settings()
 {
-    echo "settings";
+    $template = \PetrovEgor\templates\Template::getInstance();
+    $template->setTemplate('Settings.php');
+    $params = [];
+
+    if (!empty($_POST) && isset($_POST['api_key']) && isset($_POST['sync_frequency'])) {
+        if (!Common::isVideoAvailable('jNQXAC9IVRw', $_POST['api_key'])) {
+            $params['is_wrong_api_key'] = true;
+            //wrong api key
+        } else {
+            delete_option(Common::SETTINGS_API_KEY);
+            add_option(Common::SETTINGS_API_KEY, $_POST['api_key']);
+            delete_option(Common::SETTINGS_CHECK_FREQ);
+            add_option(Common::SETTINGS_CHECK_FREQ, $_POST['sync_frequency']);
+        }
+    }
+    $apiKey = get_option(Common::SETTINGS_API_KEY);
+    $checkFreq = get_option(Common::SETTINGS_CHECK_FREQ);
+    if (isset($apiKey) && isset($checkFreq)) {
+        $params['apiKey'] = $apiKey;
+        $params['checkFreq'] = $checkFreq;
+        $template->setParams($params);
+    }
+    $template->render();
 }
 
 $menuIndex = function() {
@@ -69,10 +99,11 @@ $menuIndex = function() {
         'manage_options',
         'youtube-checker-all-videos',
             'allVideos');
+    $labelCounter = Common::getUnavailableVideoLabelCounter();
     add_submenu_page(
         'youtube-checker',
         'Unavailable videos',
-        'Unavailable videos',
+        'Unavailable videos' . $labelCounter,
         'manage_options',
         'youtube-checker-unavailable-videos',
         'unavailableVideos');
@@ -82,7 +113,7 @@ $menuIndex = function() {
         'Settings',
         'manage_options',
         'youtube-checker-settings',
-        'unavailableVideos');
+        'settings');
 };
 
 add_action('admin_menu', $menuIndex);
@@ -94,6 +125,8 @@ function searchVideosInPost($attr)
     $break = 1;
     $posts = get_posts();
     Logger::info('posts found: ' . sizeof($posts));
+    $pages = get_pages();
+    Logger::info('pages found: ' . sizeof($pages));
     /** @var WP_Post $post */
     foreach ($posts as $post) {
         Logger::info('post  ' . $post->ID);
@@ -138,12 +171,18 @@ function checkByApi($attr)
     $posts = get_posts();
     /** @var WP_Post $post */
     foreach ($posts as $post) {
+        $isHaveUnavailableVideo = false;
+        \PetrovEgor\Database::unmarkUnavailableVideo($post);
         $ids = Common::getYoutubeIdsByPost($post);
         Common::resetUnavailableVideoListForPost($post);
         foreach ($ids as $id) {
             if (!Common::isVideoAvailable($id)) {
-                Common::reportVideoUnavailable($id);
+                $isHaveUnavailableVideo = true;
+                Common::reportVideoUnavailable($post, $id);
             }
+        }
+        if ($isHaveUnavailableVideo) {
+            \PetrovEgor\Database::markUnavailableVideo($post);
         }
     }
 }

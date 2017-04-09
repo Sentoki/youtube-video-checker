@@ -18,31 +18,48 @@ class Database {
         global $wpdb;
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
-        $sql = "CREATE TABLE {$wpdb->prefix}planes_plugin (
+        $sql = "CREATE TABLE {$wpdb->prefix}posts_with_unavailable_videos (
 id INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
-title VARCHAR(100),
-description VARCHAR(1000),
-price FLOAT
+post_id INTEGER NOT NULL,
+check_at TIMESTAMP
 );";
         dbDelta($sql);
     }
 
-    public function saveNewPlane($post)
+    /**
+     * @param \WP_Post $post
+     */
+    public static function markUnavailableVideo($post)
     {
-        $this->wpdb->insert(
-            $this->prefix.'planes_plugin',
+        global $wpdb;
+        $wpdb->insert(
+            $wpdb->prefix.'posts_with_unavailable_videos',
             [
-                'title' => $post['plane_title'],
-                'price' => $post['plane_price'],
-                'description' => $post['plane_description'],
+                'post_id' => $post->ID,
+                'check_at' => (new \DateTime('now'))->format('Y-m-d H:i:s'),
             ]
         );
     }
 
-    public function getPlanes()
+    /**
+     * @param \WP_Post $post
+     */
+    public static function unmarkUnavailableVideo($post)
     {
-        $sql = "select * from {$this->prefix}planes_plugin";
-        $results = $this->wpdb->get_results($sql, ARRAY_A);
-        return $results;
+        global $wpdb;
+        $wpdb->delete(
+            $wpdb->prefix.'posts_with_unavailable_videos',
+            [
+                'post_id' => $post->ID,
+            ]
+        );
+    }
+
+    public static function getPostsWithUnavailableVideos()
+    {
+        global $wpdb;
+        $tablename = $wpdb->prefix.'posts_with_unavailable_videos';
+        $posts = $wpdb->get_results("select * from $tablename", ARRAY_A);
+        return $posts;
     }
 }

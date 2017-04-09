@@ -8,6 +8,9 @@ class Common {
     const UNAVAILABLE_IDS_KEY = 'unavailable-youtube-checker-meta-key';
     const TIME_KEY = 'youtube-checker-meta-time';
 
+    const SETTINGS_API_KEY = 'youtube-checker-api-key';
+    const SETTINGS_CHECK_FREQ = 'youtube-checker-check-freq';
+
     /**
      * @param \WP_Post $post
      * @return \DateTime|null
@@ -45,14 +48,19 @@ class Common {
 
     /**
      * @param string $id
+     * @param string $apiKey
      * @return bool
      */
-    public static function isVideoAvailable($id)
+    public static function isVideoAvailable($id, $apiKey = null)
     {
         $url = 'https://www.googleapis.com/youtube/v3/videos?';
+        $apiKey = isset($apiKey) ? $apiKey : get_option(Common::SETTINGS_API_KEY);
+        if (!isset($apiKey)) {
+            return false;
+        }
         $params = [
             'id' => $id,
-            'key' => 'AIzaSyCkml-hsS5ElMNNiW0R-Vf7hIrWyLwq-wU',
+            'key' => $apiKey,
             'part' => 'status',
         ];
         $url .= http_build_query($params);
@@ -94,8 +102,25 @@ class Common {
         add_post_meta($post->ID, self::UNAVAILABLE_IDS_KEY, $videoId);
     }
 
-    public static function getUnavailableVideoList()
+    /**
+     * @param \WP_Post $post
+     * @return array
+     */
+    public static function getUnavailableVideoList($post)
     {
-        get_metadata('', '');
+        return get_post_meta($post->ID, self::UNAVAILABLE_IDS_KEY);
+    }
+
+    public static function getUnavailableVideoLabelCounter()
+    {
+        $counter = 0;
+        $posts = Database::getPostsWithUnavailableVideos();
+        foreach ($posts as $post) {
+            $wpPost = get_post($post['post_id']);
+            $ids = self::getUnavailableVideoList($wpPost);
+            $counter += sizeof($ids);
+        }
+        $label = "<span class='update-plugins count-$counter' title='Unavailable Videos'><span class='update-count'>$counter</span></span>";
+        return $label;
     }
 }
