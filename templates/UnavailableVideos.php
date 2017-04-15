@@ -1,6 +1,7 @@
 <?php
 $template = \PetrovEgor\templates\Template::getInstance();
 $params = $template->getParams();
+//$url = \PetrovEgor\Common::getCurrentUrl();
 ?>
 <h1>Unavailable Videos</h1>
 <table class="widefat">
@@ -36,5 +37,7 @@ $params = $template->getParams();
     <?php } ?>
     </tbody>
 </table>
+<br>
+<span style="font-size: larger;"><?=$params['paginationLinks']?></span>
 <?php
 

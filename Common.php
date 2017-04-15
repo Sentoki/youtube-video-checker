@@ -2,14 +2,22 @@
 
 namespace PetrovEgor;
 
+use PetrovEgor\YoutubePlugins\YouTube;
+use PetrovEgor\YoutubePlugins\YouTubeEmbedWpDevArt;
+
 class Common {
 
-    const ALL_IDS_KEY = 'youtube-checker-meta-key';
+    const ALL_VIDEOS_IDS_KEY = 'youtube-checker-meta-key';
     const UNAVAILABLE_IDS_KEY = 'unavailable-youtube-checker-meta-key';
-    const TIME_KEY = 'youtube-checker-meta-time';
+    const LAST_CHECK_TIME_KEY = 'youtube-checker-meta-time';
 
     const SETTINGS_API_KEY = 'youtube-checker-api-key';
     const SETTINGS_CHECK_FREQ = 'youtube-checker-check-freq';
+
+    public static $supportedPlugins = [
+        //YouTube::class,
+        YouTubeEmbedWpDevArt::class,
+    ];
 
     /**
      * @param \WP_Post $post
@@ -17,7 +25,7 @@ class Common {
      */
     public static function getPostLastCheckTime($post)
     {
-        $postLastCheckTime = get_post_meta($post->ID, self::TIME_KEY);
+        $postLastCheckTime = get_post_meta($post->ID, self::LAST_CHECK_TIME_KEY);
         if (sizeof($postLastCheckTime) > 0) {
             Logger::info('post  ' . $post->ID . ', postLastCheckTime: ' . $postLastCheckTime[0]);
             return new \DateTime($postLastCheckTime[0]);
@@ -43,7 +51,7 @@ class Common {
      */
     public static function getYoutubeIdsByPost($post)
     {
-        return get_post_meta($post->ID, self::ALL_IDS_KEY);
+        return get_post_meta($post->ID, self::ALL_VIDEOS_IDS_KEY);
     }
 
     /**
@@ -114,7 +122,7 @@ class Common {
     public static function getUnavailableVideoLabelCounter()
     {
         $counter = 0;
-        $posts = Database::getPostsWithUnavailableVideos();
+        $posts = Database::getAllPostsWithUnavailableVideos();
         foreach ($posts as $post) {
             $wpPost = get_post($post['post_id']);
             $ids = self::getUnavailableVideoList($wpPost);
@@ -122,5 +130,48 @@ class Common {
         }
         $label = "<span class='update-plugins count-$counter' title='Unavailable Videos'><span class='update-count'>$counter</span></span>";
         return $label;
+    }
+
+    public static function checkExtensions()
+    {
+        $requiredExtensions = ['curl'];
+        foreach ($requiredExtensions as $extension) {
+            extension_loaded($extension);
+        }
+    }
+
+    /**
+     * @param \WP_Post $post
+     * @return boolean
+     */
+    public static function isNeedCheckPost($post)
+    {
+        $postLastCheckTime = Common::getPostLastCheckTime($post);
+        $postLastUpdatetime = Common::getPostLastUpdateTime($post);
+        if (!isset($postLastCheckTime) || $postLastUpdatetime > $postLastCheckTime) {
+            return true;
+        } else {
+            Logger::info('post  ' . $post->ID . ', no changes');
+            return false;
+        }
+    }
+
+    /**
+     * @param \WP_Post $post
+     */
+    public static function updateLastCheckTime($post)
+    {
+        $now = new \DateTime('now');
+        add_post_meta(
+            $post->ID,
+            Common::LAST_CHECK_TIME_KEY,
+            $now->format('Y-m-d H:i:s')
+        );
+    }
+
+    public static function getCurrentUrlWithoutPagination()
+    {
+        $uri = preg_replace("&pagination=2", '', $_SERVER['REQUEST_URI']);
+        return admin_url('admin.php') . $uri;
     }
 }

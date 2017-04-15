@@ -55,11 +55,57 @@ check_at TIMESTAMP
         );
     }
 
-    public static function getPostsWithUnavailableVideos()
+    public static function getAllPostsWithVideos()
+    {
+        return self::getPostsWithVideos(true);
+    }
+
+    public static function getPostsWithVideos($isAllPosts = false)
     {
         global $wpdb;
+        $videosPerPage = 20;
+        if(isset($_GET['pagination'])) {
+            $offset = ($_GET['pagination']-1) * $videosPerPage;
+        } else {
+            $offset = 0;
+        }
+        if ($isAllPosts === true) {
+            $limit = '';
+        } else {
+            $limit = "limit $offset,$videosPerPage";
+        }
         $tablename = $wpdb->prefix.'posts_with_unavailable_videos';
-        $posts = $wpdb->get_results("select * from $tablename", ARRAY_A);
+        $posts = $wpdb->get_results(
+            "select * from $tablename ORDER BY id $limit",
+            ARRAY_A
+        );
+        return $posts;
+    }
+
+    public static function getAllPostsWithUnavailableVideos()
+    {
+        return self::getPostsWithUnavailableVideos(true);
+    }
+
+    public static function getPostsWithUnavailableVideos($isAllPosts = false)
+    {
+        global $wpdb;
+        $videosPerPage = 20;
+        if(isset($_GET['pagination'])) {
+            $offset = ($_GET['pagination']-1) * $videosPerPage;
+        } else {
+            $offset = 0;
+        }
+        if ($isAllPosts === true) {
+            $limit = '';
+        } else {
+            $limit = "limit $offset,$videosPerPage";
+        }
+        $tablename = $wpdb->prefix.'posts_with_unavailable_videos';
+        $posts = $wpdb->get_results(
+            "select * from $tablename ORDER BY id $limit",
+            ARRAY_A
+        );
         return $posts;
     }
 }

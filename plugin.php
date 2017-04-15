@@ -20,6 +20,8 @@ require_once 'autoload.php';
 
 use PetrovEgor\Logger;
 use PetrovEgor\Common;
+use PetrovEgor\Cron;
+use PetrovEgor\Pagination;
 
 $break = 1;
 /*
@@ -28,8 +30,28 @@ $break = 1;
 add_action('search-videos-in-posts', 'searchVideosInPost');
 add_action('check-by-api', 'checkByApi');
 
+/*
+ * Cron actions and filters
+ */
+add_action('youtube-checker-cron', [Cron::class, 'cron']);
+add_filter('cron_schedules', [Cron::class, 'everyTenSecondsInterval']);
+
 register_activation_hook(__FILE__, [\PetrovEgor\Database::class, 'updateSchema']);
 
+$checkFreq = get_option(Common::SETTINGS_CHECK_FREQ);
+if (isset($checkFreq)) {
+    Logger::info('checkFreq set: ' . $checkFreq);
+    $nextScheduled = wp_next_scheduled('youtube-checker-cron');
+    if (!$nextScheduled) {
+        Logger::info('not scheduled');
+        wp_schedule_event(time(), 'ten_seconds', 'youtube-checker-cron');
+    } else {
+        $nextScheduled = new DateTime('@' . $nextScheduled);
+        Logger::info('scheduled: ' . $nextScheduled->format('Y-m-d H:i:s'));
+    }
+} else {
+    Logger::info('checkFreq NOT set');
+}
 
 function indexPage()
 {
@@ -57,8 +79,23 @@ function unavailableVideos()
     $posts = \PetrovEgor\Database::getPostsWithUnavailableVideos();
     $template = \PetrovEgor\templates\Template::getInstance();
     $template->setTemplate('UnavailableVideos.php');
+    $pagesNumber = Pagination::getPagesNumber();
+    $currentPage = Pagination::getCurrentPage();
+    $paginationLinks = paginate_links(
+        [
+            'base' => add_query_arg('pagination', '%#%'),
+            'format' => '',
+            'prev_text' => __('« Previous'),
+            'next_text' => __('Next »'),
+            'total' => $pagesNumber,
+            'current' => $currentPage,
+//            'type' => 'array'
+        ]);
     $template->setParams([
         'posts' => $posts,
+        'pagesNumber' => $pagesNumber,
+        'currentPage' => $currentPage,
+        'paginationLinks' => $paginationLinks,
     ]);
     $template->render();
 }
@@ -94,8 +131,8 @@ $menuIndex = function() {
     add_menu_page('Youtube checker', 'Youtube checker', 'manage_options', 'youtube-checker', 'indexPage');
     add_submenu_page(
         'youtube-checker',
-        'All videos',
-        'All videos',
+        'Available videos',
+        'Available videos',
         'manage_options',
         'youtube-checker-all-videos',
             'allVideos');
@@ -120,55 +157,31 @@ add_action('admin_menu', $menuIndex);
 
 function searchVideosInPost($attr)
 {
-    global $youtubeCheckerCurrentPost;
-    add_shortcode('wpdevart_youtube', 'myShortcodeHandler');
     $break = 1;
-    $posts = get_posts();
+    $posts = get_posts(['numberposts' => -1]);
     Logger::info('posts found: ' . sizeof($posts));
     $pages = get_pages();
     Logger::info('pages found: ' . sizeof($pages));
     /** @var WP_Post $post */
     foreach ($posts as $post) {
-        Logger::info('post  ' . $post->ID);
-        $postLastCheckTime = Common::getPostLastCheckTime($post);
-        $postLastUpdatetime = Common::getPostLastUpdateTime($post);
-        if (!isset($postLastCheckTime) || $postLastUpdatetime > $postLastCheckTime) {
-            if(has_shortcode($post->post_content, 'wpdevart_youtube')) {
-                Logger::info('post  ' . $post->ID . ', has shortcode');
-                $youtubeCheckerCurrentPost = $post;
-                delete_post_meta($post->ID, Common::ALL_IDS_KEY);
-                delete_post_meta($post->ID, Common::TIME_KEY);
-                Logger::info('post  ' . $post->ID . ', saving youtube ids');
-                do_shortcode($post->post_content);
-            } else {
-                Logger::info('post  ' . $post->ID . ', no shortcode');
+        /** @var \PetrovEgor\YoutubePlugins\YoutubePluginAbstract $plugin */
+        foreach (Common::$supportedPlugins as $supportedPlugin) {
+            $plugin = $supportedPlugin::getInstance();
+            Logger::info('post  ' . $post->ID);
+            if (Common::isNeedCheckPost($post)) {
+                if($plugin->hasShorcode($post)) {
+                    $plugin->saveYoutubeIds($post);
+                }
+                Common::updateLastCheckTime($post);
             }
-            $now = new DateTime('now');
-            add_post_meta($post->ID, Common::TIME_KEY, $now->format('Y-m-d H:i:s'));
-        } else {
-            Logger::info('post  ' . $post->ID . ', no changes');
         }
-        $break = 1;
     }
-    $break = 1;
-}
-
-function myShortcodeHandler($attr, $content = '')
-{
-    global $youtubeCheckerCurrentPost;
-    $post = $youtubeCheckerCurrentPost;
-
-    delete_post_meta($post->ID, Common::TIME_KEY);
-    add_post_meta($post->ID, Common::ALL_IDS_KEY, $content);
-    $now = new DateTime('now');
-    add_post_meta($post->ID, Common::TIME_KEY, $now->format('Y-m-d H:i:s'));
-    $break = 1;
 }
 
 function checkByApi($attr)
 {
     $break = 1;
-    $posts = get_posts();
+    $posts = get_posts(['numberposts' => -1]);
     /** @var WP_Post $post */
     foreach ($posts as $post) {
         $isHaveUnavailableVideo = false;
