@@ -4,13 +4,25 @@ namespace PetrovEgor;
 
 class Pagination
 {
-    public static function getPagesNumber()
+    public static function getUnavailablePagesNumber()
     {
         global $wpdb;
         $videosPerPage = 20;
-        $tablename = $wpdb->prefix.'posts_with_unavailable_videos';
+        $tablename = $wpdb->prefix.'posts_with_videos';
         $count = $wpdb->get_row(
-            "select count(id) from $tablename",
+            "select count(id) from $tablename WHERE has_unavailiable is TRUE ",
+            ARRAY_N
+        );
+        return ceil($count[0]/$videosPerPage);
+    }
+
+    public static function getAvailablePagesNumber()
+    {
+        global $wpdb;
+        $videosPerPage = 20;
+        $tablename = $wpdb->prefix.'posts_with_videos';
+        $count = $wpdb->get_row(
+            "select count(id) from $tablename WHERE has_availiable is TRUE ",
             ARRAY_N
         );
         return ceil($count[0]/$videosPerPage);

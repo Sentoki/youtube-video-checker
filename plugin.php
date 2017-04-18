@@ -18,10 +18,12 @@
 
 require_once 'autoload.php';
 
+use PetrovEgor\ContentSources\ContentSourceAbstract;
 use PetrovEgor\Logger;
 use PetrovEgor\Common;
 use PetrovEgor\Cron;
 use PetrovEgor\Pagination;
+use PetrovEgor\YoutubePlugins\YoutubePluginAbstract;
 
 $break = 1;
 /*
@@ -44,7 +46,8 @@ if (isset($checkFreq)) {
     $nextScheduled = wp_next_scheduled('youtube-checker-cron');
     if (!$nextScheduled) {
         Logger::info('not scheduled');
-        wp_schedule_event(time(), 'ten_seconds', 'youtube-checker-cron');
+        //wp_schedule_event(time(), 'ten_seconds', 'youtube-checker-cron');
+        wp_unschedule_event(time(), 'ten_seconds', 'youtube-checker-cron');
     } else {
         $nextScheduled = new DateTime('@' . $nextScheduled);
         Logger::info('scheduled: ' . $nextScheduled->format('Y-m-d H:i:s'));
@@ -70,8 +73,28 @@ function indexPage()
 
 function allVideos()
 {
-    //add
-    echo "allVideos";
+    $posts = \PetrovEgor\Database::getPostsWithAvailableVideos();
+    $template = \PetrovEgor\templates\Template::getInstance();
+    $template->setTemplate('AvailableVideos.php');
+    $pagesNumber = Pagination::getAvailablePagesNumber();
+    $currentPage = Pagination::getCurrentPage();
+    $paginationLinks = paginate_links(
+        [
+            'base' => add_query_arg('pagination', '%#%'),
+            'format' => '',
+            'prev_text' => __('« Previous'),
+            'next_text' => __('Next »'),
+            'total' => $pagesNumber,
+            'current' => $currentPage,
+//            'type' => 'array'
+        ]);
+    $template->setParams([
+        'posts' => $posts,
+        'pagesNumber' => $pagesNumber,
+        'currentPage' => $currentPage,
+        'paginationLinks' => $paginationLinks,
+    ]);
+    $template->render();
 }
 
 function unavailableVideos()
@@ -79,7 +102,7 @@ function unavailableVideos()
     $posts = \PetrovEgor\Database::getPostsWithUnavailableVideos();
     $template = \PetrovEgor\templates\Template::getInstance();
     $template->setTemplate('UnavailableVideos.php');
-    $pagesNumber = Pagination::getPagesNumber();
+    $pagesNumber = Pagination::getUnavailablePagesNumber();
     $currentPage = Pagination::getCurrentPage();
     $paginationLinks = paginate_links(
         [
@@ -129,18 +152,19 @@ function settings()
 
 $menuIndex = function() {
     add_menu_page('Youtube checker', 'Youtube checker', 'manage_options', 'youtube-checker', 'indexPage');
+    $availableLabelCounter = Common::getAvailableVideoLabelCounter();
     add_submenu_page(
         'youtube-checker',
         'Available videos',
-        'Available videos',
+        'Available videos' . $availableLabelCounter,
         'manage_options',
         'youtube-checker-all-videos',
             'allVideos');
-    $labelCounter = Common::getUnavailableVideoLabelCounter();
+    $unavailableLabelCounter = Common::getUnavailableVideoLabelCounter();
     add_submenu_page(
         'youtube-checker',
         'Unavailable videos',
-        'Unavailable videos' . $labelCounter,
+        'Unavailable videos' . $unavailableLabelCounter,
         'manage_options',
         'youtube-checker-unavailable-videos',
         'unavailableVideos');
@@ -155,13 +179,14 @@ $menuIndex = function() {
 
 add_action('admin_menu', $menuIndex);
 
-function searchVideosInPost($attr)
+function searchVideosInPost2($attr)
 {
     $break = 1;
     $posts = get_posts(['numberposts' => -1]);
     Logger::info('posts found: ' . sizeof($posts));
     $pages = get_pages();
     Logger::info('pages found: ' . sizeof($pages));
+
     /** @var WP_Post $post */
     foreach ($posts as $post) {
         /** @var \PetrovEgor\YoutubePlugins\YoutubePluginAbstract $plugin */
@@ -178,25 +203,67 @@ function searchVideosInPost($attr)
     }
 }
 
-function checkByApi($attr)
+function searchVideosInPost($attr)
 {
-    $break = 1;
-    $posts = get_posts(['numberposts' => -1]);
-    /** @var WP_Post $post */
-    foreach ($posts as $post) {
-        $isHaveUnavailableVideo = false;
-        \PetrovEgor\Database::unmarkUnavailableVideo($post);
-        $ids = Common::getYoutubeIdsByPost($post);
-        Common::resetUnavailableVideoListForPost($post);
-        foreach ($ids as $id) {
-            if (!Common::isVideoAvailable($id)) {
-                $isHaveUnavailableVideo = true;
-                Common::reportVideoUnavailable($post, $id);
+    /** @var ContentSourceAbstract $contentSource */
+    foreach (Common::$supportedContentSources as $contentSource) {
+        /** @var YoutubePluginAbstract $supportedPlugin */
+        foreach (Common::$supportedPlugins as $supportedPlugin) {
+            /** @var YoutubePluginAbstract $plugin */
+            $plugin = $supportedPlugin::getInstance();
+            /** @var ContentSourceAbstract $source */
+            $source = $contentSource::getInstance();
+            $objects = $source->getAllObjects();
+            foreach ($objects as $object) {
+                if ($source->isNeedCheckSource($object)) {
+                    if($plugin->hasShorcode($object)) {
+                        $plugin->saveYoutubeIds($object);
+                    }
+                    Common::updateLastCheckTime($object);
+                }
             }
         }
-        if ($isHaveUnavailableVideo) {
-            \PetrovEgor\Database::markUnavailableVideo($post);
+    }
+}
+
+function checkByApi($attr)
+{
+    try {
+        $sources = [];
+        /** @var ContentSourceAbstract $contentSource */
+        foreach (Common::$supportedContentSources as $contentSource) {
+            /** @var ContentSourceAbstract $source */
+            $source = $contentSource::getInstance();
+            $sources = array_merge($sources, $source->getAllObjects());
         }
+        /** @var WP_Post $post */
+        foreach ($sources as $post) {
+            $isHaveUnavailableVideo = false;
+            $isHaveAvailableVideo = false;
+            \PetrovEgor\Database::unmarkUnavailableVideo($post);
+            \PetrovEgor\Database::unmarkAvailableVideo($post);
+            $ids = Common::getYoutubeIdsByPost($post);
+            Common::resetUnavailableVideoListForPost($post);
+            Common::resetAvailableVideoListForPost($post);
+            foreach ($ids as $id) {
+                if (!Common::isVideoAvailable($id)) {
+                    $isHaveUnavailableVideo = true;
+                    Common::reportVideoUnavailable($post, $id);
+                } else {
+                    $isHaveAvailableVideo = true;
+                    Common::reportVideoAvailable($post, $id);
+                }
+            }
+            if ($isHaveUnavailableVideo) {
+                \PetrovEgor\Database::markUnavailableVideo($post);
+            }
+            if ($isHaveAvailableVideo) {
+                \PetrovEgor\Database::markAvailableVideo($post);
+            }
+        }
+    } catch (\Exception $exception) {
+        Logger::info($exception->getMessage(), 'errors.log');
+        throw $exception;
     }
 }
 

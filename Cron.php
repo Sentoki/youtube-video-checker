@@ -6,7 +6,7 @@ class Cron
 {
     public function everyTenSecondsInterval($schedules){
         $schedules['ten_seconds'] = [
-            'interval' => 10,
+            'interval' => 60*60*24,
             'display' => esc_html__('Ten seconds'),
         ];
 

@@ -2,12 +2,16 @@
 
 namespace PetrovEgor;
 
+use PetrovEgor\ContentSources\Page;
+use PetrovEgor\ContentSources\WooCommerce;
 use PetrovEgor\YoutubePlugins\YouTube;
 use PetrovEgor\YoutubePlugins\YouTubeEmbedWpDevArt;
+use PetrovEgor\ContentSources\Post;
 
 class Common {
 
     const ALL_VIDEOS_IDS_KEY = 'youtube-checker-meta-key';
+    const AVAILABLE_IDS_KEY = 'available-youtube-checker-meta-key';
     const UNAVAILABLE_IDS_KEY = 'unavailable-youtube-checker-meta-key';
     const LAST_CHECK_TIME_KEY = 'youtube-checker-meta-time';
 
@@ -17,6 +21,12 @@ class Common {
     public static $supportedPlugins = [
         //YouTube::class,
         YouTubeEmbedWpDevArt::class,
+    ];
+
+    public static $supportedContentSources = [
+        Post::class,
+        Page::class,
+        WooCommerce::class,
     ];
 
     /**
@@ -103,6 +113,14 @@ class Common {
 
     /**
      * @param \WP_Post $post
+     */
+    public static function resetAvailableVideoListForPost($post)
+    {
+        delete_post_meta($post->ID, self::AVAILABLE_IDS_KEY);
+    }
+
+    /**
+     * @param \WP_Post $post
      * @param string $videoId
      */
     public static function reportVideoUnavailable($post, $videoId)
@@ -112,11 +130,29 @@ class Common {
 
     /**
      * @param \WP_Post $post
+     * @param string $videoId
+     */
+    public static function reportVideoAvailable($post, $videoId)
+    {
+        add_post_meta($post->ID, self::AVAILABLE_IDS_KEY, $videoId);
+    }
+
+    /**
+     * @param \WP_Post $post
      * @return array
      */
     public static function getUnavailableVideoList($post)
     {
         return get_post_meta($post->ID, self::UNAVAILABLE_IDS_KEY);
+    }
+
+    /**
+     * @param \WP_Post $post
+     * @return array
+     */
+    public static function getAvailableVideoList($post)
+    {
+        return get_post_meta($post->ID, self::AVAILABLE_IDS_KEY);
     }
 
     public static function getUnavailableVideoLabelCounter()
@@ -132,6 +168,19 @@ class Common {
         return $label;
     }
 
+    public static function getAvailableVideoLabelCounter()
+    {
+        $counter = 0;
+        $posts = Database::getAllPostsWithAvailableVideos();
+        foreach ($posts as $post) {
+            $wpPost = get_post($post['post_id']);
+            $ids = self::getAvailableVideoList($wpPost);
+            $counter += sizeof($ids);
+        }
+        $label = "<span class='update-plugins count-$counter' style='background-color: #2ea2cc;' title='Unavailable Videos'><span class='update-count'>$counter</span></span>";
+        return $label;
+    }
+
     public static function checkExtensions()
     {
         $requiredExtensions = ['curl'];
@@ -141,17 +190,22 @@ class Common {
     }
 
     /**
-     * @param \WP_Post $post
+     * @param \WP_Post $source
      * @return boolean
      */
-    public static function isNeedCheckPost($post)
+    public static function isNeedCheckPost($source)
     {
-        $postLastCheckTime = Common::getPostLastCheckTime($post);
-        $postLastUpdatetime = Common::getPostLastUpdateTime($post);
+        $postLastCheckTime = get_post_meta($source->ID, Common::LAST_CHECK_TIME_KEY);
+        if (sizeof($postLastCheckTime) > 0) {
+            $postLastCheckTime = new \DateTime($postLastCheckTime[0]);
+        }
+        $postLastUpdatetime = new \DateTime($source->post_modified_gmt);
+
         if (!isset($postLastCheckTime) || $postLastUpdatetime > $postLastCheckTime) {
+            Logger::info('post  ' . $source->ID . ', need update');
             return true;
         } else {
-            Logger::info('post  ' . $post->ID . ', no changes');
+            Logger::info('post  ' . $source->ID . ', no changes');
             return false;
         }
     }

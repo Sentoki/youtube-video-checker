@@ -18,9 +18,11 @@ class Database {
         global $wpdb;
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
-        $sql = "CREATE TABLE {$wpdb->prefix}posts_with_unavailable_videos (
+        $sql = "CREATE TABLE {$wpdb->prefix}posts_with_videos (
 id INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
-post_id INTEGER NOT NULL,
+post_id INTEGER NOT NULL UNIQUE,
+has_availiable BIT(1),
+has_unavailiable BIT(1),
 check_at TIMESTAMP
 );";
         dbDelta($sql);
@@ -32,13 +34,36 @@ check_at TIMESTAMP
     public static function markUnavailableVideo($post)
     {
         global $wpdb;
-        $wpdb->insert(
-            $wpdb->prefix.'posts_with_unavailable_videos',
-            [
-                'post_id' => $post->ID,
-                'check_at' => (new \DateTime('now'))->format('Y-m-d H:i:s'),
-            ]
+        $time = (new \DateTime('now'))->format('Y-m-d H:i:s');
+        $table = $wpdb->prefix.'posts_with_videos';
+        $wpdb->query(
+            "insert into {$table} (post_id, has_unavailiable, check_at)
+                  VALUES ({$post->ID}, TRUE, '{$time}') ON DUPLICATE KEY UPDATE has_unavailiable=TRUE, check_at='{$time}'"
         );
+    }
+
+    /**
+     * @param \WP_Post $post
+     */
+    public static function markAvailableVideo($post)
+    {
+        global $wpdb;
+        $time = (new \DateTime('now'))->format('Y-m-d H:i:s');
+        $table = $wpdb->prefix.'posts_with_videos';
+        $wpdb->query(
+            "insert into {$table} (post_id, has_availiable, check_at)
+                  VALUES ({$post->ID}, TRUE, '{$time}') ON DUPLICATE KEY UPDATE has_availiable=TRUE, check_at='{$time}'"
+        );
+    }
+
+    /**
+     * @param \WP_Post $post
+     */
+    public static function unmarkAvailableVideo($post)
+    {
+        global $wpdb;
+        $table = $wpdb->prefix.'posts_with_videos';
+        $wpdb->query("update {$table} set has_availiable=FALSE WHERE post_id={$post->ID}");
     }
 
     /**
@@ -47,20 +72,16 @@ check_at TIMESTAMP
     public static function unmarkUnavailableVideo($post)
     {
         global $wpdb;
-        $wpdb->delete(
-            $wpdb->prefix.'posts_with_unavailable_videos',
-            [
-                'post_id' => $post->ID,
-            ]
-        );
+        $table = $wpdb->prefix.'posts_with_videos';
+        $wpdb->query("update {$table} set has_unavailiable=FALSE WHERE post_id={$post->ID}");
     }
 
-    public static function getAllPostsWithVideos()
+    public static function getAllPostsWithAvailableVideos()
     {
-        return self::getPostsWithVideos(true);
+        return self::getPostsWithAvailableVideos(true);
     }
 
-    public static function getPostsWithVideos($isAllPosts = false)
+    public static function getPostsWithAvailableVideos($isAllPosts = false)
     {
         global $wpdb;
         $videosPerPage = 20;
@@ -74,9 +95,9 @@ check_at TIMESTAMP
         } else {
             $limit = "limit $offset,$videosPerPage";
         }
-        $tablename = $wpdb->prefix.'posts_with_unavailable_videos';
+        $tablename = $wpdb->prefix.'posts_with_videos';
         $posts = $wpdb->get_results(
-            "select * from $tablename ORDER BY id $limit",
+            "select * from $tablename WHERE has_availiable is TRUE ORDER BY id $limit",
             ARRAY_A
         );
         return $posts;
@@ -101,9 +122,9 @@ check_at TIMESTAMP
         } else {
             $limit = "limit $offset,$videosPerPage";
         }
-        $tablename = $wpdb->prefix.'posts_with_unavailable_videos';
+        $tablename = $wpdb->prefix.'posts_with_videos';
         $posts = $wpdb->get_results(
-            "select * from $tablename ORDER BY id $limit",
+            "select * from $tablename WHERE has_unavailiable IS TRUE ORDER BY id $limit",
             ARRAY_A
         );
         return $posts;

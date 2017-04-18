@@ -11,6 +11,8 @@ use PetrovEgor\Logger;
  */
 class YouTubeEmbedWpDevArt extends YoutubePluginAbstract
 {
+    public static $instance;
+
     protected $tagName = 'wpdevart_youtube';
 
     public function shortCodeHandler($attr, $content = '')

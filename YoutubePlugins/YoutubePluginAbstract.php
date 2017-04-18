@@ -4,25 +4,12 @@ namespace PetrovEgor\YoutubePlugins;
 
 use PetrovEgor\Common;
 use PetrovEgor\Logger;
+use PetrovEgor\SingletonAbstract;
 
-abstract class YoutubePluginAbstract
+abstract class YoutubePluginAbstract extends SingletonAbstract
 {
     protected $tagName;
     protected $shortCodeMethod = 'shortCodeHandler';
-
-    public static $instance;
-
-    private function __construct()
-    {
-    }
-
-    public static function getInstance()
-    {
-        if (!isset(static::$instance)) {
-            static::$instance = new static();
-        }
-        return static::$instance;
-    }
 
     /**
      * @param \WP_Post $post
