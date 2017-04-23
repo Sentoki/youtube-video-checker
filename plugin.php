@@ -268,8 +268,8 @@ function checkByApi($attr)
         throw $exception;
     }
     Database::saveCheckTime();
-    $counter = Common::getUnavailableVideoLabelCounter();
-    if ((int)$counter > 0) {
-        Common::sendEmailNotification();
-    }
+//    $counter = Common::getUnavailableVideoLabelCounter();
+//    if ((int)$counter > 0) {
+//        Common::sendEmailNotification();
+//    }
 }
