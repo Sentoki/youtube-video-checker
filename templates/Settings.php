@@ -17,18 +17,18 @@ if ($params['is_wrong_api_key']) {
     <?php
     $value = isset($params['apiKey']) ? $params['apiKey'] : '';
     $hourChecked = '';
-    $dayChecked = '';
-    $weekChecked = '';
+    $twiceDayChecked = '';
+    $onceDayChecked = '';
     if (isset($params['checkFreq'])) {
         switch ($params['checkFreq']) {
-            case 'every_hour':
+            case 'hourly':
                 $hourChecked = "checked";
                 break;
-            case 'every_day':
-                $dayChecked = "checked";
+            case 'twicedaily':
+                $twiceDayChecked = "checked";
                 break;
-            case 'every_week':
-                $weekChecked = "checked";
+            case 'daily':
+                $onceDayChecked = "checked";
                 break;
         }
     }
@@ -41,16 +41,16 @@ if ($params['is_wrong_api_key']) {
     <fieldset>
         <legend class="screen-reader-text"><span>input type="radio"</span></legend>
         <label title='g:i a'>
-            <input type="radio" name="sync_frequency" value="every_hour" <?=$hourChecked?> />
+            <input type="radio" name="sync_frequency" value="hourly" <?=$hourChecked?> />
             <span>Every hour</span>
         </label><br>
         <label title='g:i a'>
-            <input type="radio" name="sync_frequency" value="every_day" <?=$dayChecked?>/>
-            <span>Every day</span>
+            <input type="radio" name="sync_frequency" value="twicedaily" <?=$twiceDayChecked?>/>
+            <span>Twice a day</span>
         </label><br>
         <label title='g:i a'>
-            <input type="radio" name="sync_frequency" value="every_week" <?=$weekChecked?>/>
-            <span>Every week</span>
+            <input type="radio" name="sync_frequency" value="daily" <?=$onceDayChecked?>/>
+            <span>Once a day</span>
         </label>
     </fieldset>
     <br>

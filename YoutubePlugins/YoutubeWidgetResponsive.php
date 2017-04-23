@@ -1,33 +1,32 @@
 <?php
 
 namespace PetrovEgor\YoutubePlugins;
+
 use PetrovEgor\Common;
 use PetrovEgor\Logger;
 
 /**
- * Class that add support Youtube plugin
- * https://ru.wordpress.org/plugins/youtube-embed-plus/
+ * Class that add support Youtube Widget Responsive plugin
+ * https://ru.wordpress.org/plugins/youtube-widget-responsive/
  *
  * @package PetrovEgor\YouTubePlugins
  */
-class YouTube extends YoutubePluginAbstract
+class YoutubeWidgetResponsive extends YoutubePluginAbstract
 {
     public static $instance;
 
-    protected $tagName = 'embedyt';
+    protected $tagName = 'youtube';
 
     public function shortCodeHandler($attr, $content = '')
     {
         global $youtubeCheckerCurrentPost;
         $post = $youtubeCheckerCurrentPost;
-        $content = Common::getId($content);
 
-        Logger::info('myShortcodeHandler execute for post: ' . $post->ID);
+        $videoId = $attr['video'];
 
         delete_post_meta($post->ID, Common::LAST_CHECK_TIME_KEY);
-        add_post_meta($post->ID, Common::ALL_VIDEOS_IDS_KEY, $content);
+        add_post_meta($post->ID, Common::ALL_VIDEOS_IDS_KEY, $videoId);
         $now = new \DateTime('now');
         add_post_meta($post->ID, Common::LAST_CHECK_TIME_KEY, $now->format('Y-m-d H:i:s'));
-        $break = 1;
     }
 }

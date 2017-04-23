@@ -2,9 +2,6 @@
 
 namespace PetrovEgor\ContentSources;
 
-use PetrovEgor\Common;
-use PetrovEgor\Logger;
-
 class Post extends ContentSourceAbstract
 {
     public static $instance;
@@ -16,14 +13,5 @@ class Post extends ContentSourceAbstract
     {
         $posts = get_posts(['numberposts' => -1]);
         return $posts;
-    }
-
-    /**
-     * @param \WP_Post $source
-     * @return bool
-     */
-    public function isNeedCheckSource($source): bool
-    {
-        return Common::isNeedCheckPost($source);
     }
 }

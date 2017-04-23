@@ -16,13 +16,4 @@ class Page extends ContentSourceAbstract
         $pages = get_pages();
         return $pages;
     }
-
-    /**
-     * @param \WP_Post $source
-     * @return bool
-     */
-    public function isNeedCheckSource($source): bool
-    {
-        return Common::isNeedCheckPost($source);
-    }
 }

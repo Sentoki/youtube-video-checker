@@ -1,4 +1,5 @@
 .idea
 do_debug_log.enable
+develop_mode.enable
 logs/
 !logs/.gitkeep

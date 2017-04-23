@@ -17,12 +17,13 @@ abstract class YoutubePluginAbstract extends SingletonAbstract
      */
     public function hasShorcode($post)
     {
+        add_shortcode($this->tagName, [static::class, $this->shortCodeMethod]);
         $hasShortcode = has_shortcode($post->post_content, $this->tagName);
         if ($hasShortcode) {
-            Logger::info('post  ' . $post->ID . ', has shortcode');
+            Logger::info('post  ' . $post->ID . ', has shortcode ' . $this->tagName);
             return true;
         }
-        Logger::info('post  ' . $post->ID . ', no shortcode');
+        Logger::info('post  ' . $post->ID . ', no shortcode ' . $this->tagName);
         return false;
     }
 
@@ -48,4 +49,9 @@ abstract class YoutubePluginAbstract extends SingletonAbstract
     }
 
     abstract public function shortCodeHandler($attr, $content = '');
+
+    public function getLastCheckTimeMetaKey()
+    {
+        return $this->tagName . '_last_check_time';
+    }
 }

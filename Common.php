@@ -4,9 +4,12 @@ namespace PetrovEgor;
 
 use PetrovEgor\ContentSources\Page;
 use PetrovEgor\ContentSources\WooCommerce;
+use PetrovEgor\templates\Template;
 use PetrovEgor\YoutubePlugins\YouTube;
 use PetrovEgor\YoutubePlugins\YouTubeEmbedWpDevArt;
 use PetrovEgor\ContentSources\Post;
+use PetrovEgor\YoutubePlugins\YoutubePluginAbstract;
+use PetrovEgor\YoutubePlugins\YoutubeWidgetResponsive;
 
 class Common {
 
@@ -19,8 +22,9 @@ class Common {
     const SETTINGS_CHECK_FREQ = 'youtube-checker-check-freq';
 
     public static $supportedPlugins = [
-        //YouTube::class,
+        YouTube::class,
         YouTubeEmbedWpDevArt::class,
+        YoutubeWidgetResponsive::class,
     ];
 
     public static $supportedContentSources = [
@@ -164,6 +168,12 @@ class Common {
             $ids = self::getUnavailableVideoList($wpPost);
             $counter += sizeof($ids);
         }
+        return $counter;
+    }
+
+    public static function getUnavailableVideoLabelCounterHtml()
+    {
+        $counter = self::getUnavailableVideoLabelCounter();
         $label = "<span class='update-plugins count-$counter' title='Unavailable Videos'><span class='update-count'>$counter</span></span>";
         return $label;
     }
@@ -177,6 +187,12 @@ class Common {
             $ids = self::getAvailableVideoList($wpPost);
             $counter += sizeof($ids);
         }
+        return $counter;
+    }
+
+    public static function getAvailableVideoLabelCounterHtml()
+    {
+        $counter = self::getAvailableVideoLabelCounter();
         $label = "<span class='update-plugins count-$counter' style='background-color: #2ea2cc;' title='Unavailable Videos'><span class='update-count'>$counter</span></span>";
         return $label;
     }
@@ -227,5 +243,46 @@ class Common {
     {
         $uri = preg_replace("&pagination=2", '', $_SERVER['REQUEST_URI']);
         return admin_url('admin.php') . $uri;
+    }
+
+    public static function getId(string $url) : ?string
+    {
+        $url = trim($url);
+        $parsedUrl = parse_url($url);
+        if (isset($parsedUrl['host'])) {
+            if ($parsedUrl['host'] == 'youtu.be') {
+                $id = str_replace('/', '', $parsedUrl['path']);
+            } elseif ($parsedUrl['host'] == 'www.youtube.com') {
+                $params = [];
+                parse_str($parsedUrl['query'], $params);
+                if (isset($params['v'])) {
+                    $id = $params['v'];
+                } else {
+                    $id = null;
+                }
+            } else {
+                $id = null;
+            }
+        } else {
+            $id = null;
+        }
+        return $id;
+    }
+
+    public static function isDevelopMode()
+    {
+        return file_exists(__DIR__ . '/develop_mode.enable');
+    }
+
+    public static function sendEmailNotification()
+    {
+        $posts = Database::getPostsWithUnavailableVideos(true);
+        $email = get_option('admin_email');
+        $homeUrl = get_home_url();
+        $template = Template::getInstance();
+        $template->setTemplate('UnavailableVideosMail.php');
+        $template->setParams(['posts' => $posts]);
+        $message = $template->render();
+        wp_mail($email, 'Youtube checker, ' . $homeUrl, $message);
     }
 }

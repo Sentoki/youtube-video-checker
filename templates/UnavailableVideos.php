@@ -1,13 +1,13 @@
 <?php
 $template = \PetrovEgor\templates\Template::getInstance();
 $params = $template->getParams();
-//$url = \PetrovEgor\Common::getCurrentUrl();
 ?>
 <h1>Unavailable Videos</h1>
 <table class="widefat">
     <thead>
     <tr>
         <th class="row-title">Posts</th>
+        <th>Type</th>
         <th>Videos</th>
     </tr>
     </thead>
@@ -21,8 +21,11 @@ $params = $template->getParams();
         ?>
     <tr<?=$class?>>
         <td class="row-title"><label for="tablecell">
-                <div alt="f135" class="dashicons dashicons-align-left"></div> <a href="<?=$wpPost->guid?>" target="_blank"><?=$wpPost->post_name?></a>
-            </label></td>
+                <div alt="f135" class="dashicons dashicons-align-left"></div> <a href="<?=$wpPost->guid?>" target="_blank"><?=$wpPost->post_title?></a>
+            </label>
+
+        </td>
+        <td><span><?=$wpPost->post_type?></span></td>
         <?php
         $ids = \PetrovEgor\Common::getUnavailableVideoList($wpPost);
         ?>

@@ -8,6 +8,7 @@ $params = $template->getParams();
         <thead>
         <tr>
             <th class="row-title">Posts</th>
+            <th>Type</th>
             <th>Videos</th>
         </tr>
         </thead>
@@ -21,8 +22,9 @@ $params = $template->getParams();
             ?>
             <tr<?=$class?>>
                 <td class="row-title"><label for="tablecell">
-                        <div alt="f135" class="dashicons dashicons-align-left"></div> <a href="<?=$wpPost->guid?>" target="_blank"><?=$wpPost->post_name?></a>
+                        <div alt="f135" class="dashicons dashicons-align-left"></div> <a href="<?=$wpPost->guid?>" target="_blank"><?=$wpPost->post_title?></a>
                     </label></td>
+                <td><?=$wpPost->post_type?></td>
                 <?php
                 $ids = \PetrovEgor\Common::getAvailableVideoList($wpPost);
                 ?>

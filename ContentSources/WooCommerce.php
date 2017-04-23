@@ -13,10 +13,4 @@ class WooCommerce extends ContentSourceAbstract
         $products = get_posts(['post_type' => 'product']);
         return $products;
     }
-
-    public function isNeedCheckSource($source): bool
-    {
-        return Common::isNeedCheckPost($source);
-    }
-
 }
