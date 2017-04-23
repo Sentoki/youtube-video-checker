@@ -16,6 +16,11 @@ class YouTube extends YoutubePluginAbstract
 
     protected $tagName = 'embedyt';
 
+    public static function className()
+    {
+        return 'PetrovEgor\YoutubePlugins\YouTube';
+    }
+
     public function shortCodeHandler($attr, $content = '')
     {
         global $youtubeCheckerCurrentPost;

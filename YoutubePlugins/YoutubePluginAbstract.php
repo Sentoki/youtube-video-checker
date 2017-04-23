@@ -11,13 +11,18 @@ abstract class YoutubePluginAbstract extends SingletonAbstract
     protected $tagName;
     protected $shortCodeMethod = 'shortCodeHandler';
 
+    public static function className()
+    {
+        return 'PetrovEgor\YoutubePlugins\YoutubePluginAbstract';
+    }
+
     /**
      * @param \WP_Post $post
      * @return bool
      */
     public function hasShorcode($post)
     {
-        add_shortcode($this->tagName, [static::class, $this->shortCodeMethod]);
+        add_shortcode($this->tagName, array(static::className(), $this->shortCodeMethod));
         $hasShortcode = has_shortcode($post->post_content, $this->tagName);
         if ($hasShortcode) {
             Logger::info('post  ' . $post->ID . ', has shortcode ' . $this->tagName);
@@ -43,7 +48,7 @@ abstract class YoutubePluginAbstract extends SingletonAbstract
 
         $youtubeCheckerCurrentPost = $post;
 
-        add_shortcode($this->tagName, [static::class, $this->shortCodeMethod]);
+        add_shortcode($this->tagName, array(static::className(), $this->shortCodeMethod));
 
         do_shortcode($post->post_content);
     }

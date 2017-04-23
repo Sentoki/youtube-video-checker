@@ -21,17 +21,17 @@ class Common {
     const SETTINGS_API_KEY = 'youtube-checker-api-key';
     const SETTINGS_CHECK_FREQ = 'youtube-checker-check-freq';
 
-    public static $supportedPlugins = [
-        YouTube::class,
-        YouTubeEmbedWpDevArt::class,
-        YoutubeWidgetResponsive::class,
-    ];
+    public static $supportedPlugins = array(
+        'PetrovEgor\YoutubePlugins\YouTube',
+        'PetrovEgor\YoutubePlugins\YouTubeEmbedWpDevArt',
+        'PetrovEgor\YoutubePlugins\YoutubeWidgetResponsive',
+    );
 
-    public static $supportedContentSources = [
-        Post::class,
-        Page::class,
-        WooCommerce::class,
-    ];
+    public static $supportedContentSources = array(
+        'PetrovEgor\ContentSources\Post',
+        'PetrovEgor\ContentSources\Page',
+        'PetrovEgor\ContentSources\WooCommerce',
+    );
 
     /**
      * @param \WP_Post $post
@@ -80,11 +80,11 @@ class Common {
         if (!isset($apiKey)) {
             return false;
         }
-        $params = [
+        $params = array(
             'id' => $id,
             'key' => $apiKey,
             'part' => 'status',
-        ];
+        );
         $url .= http_build_query($params);
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
@@ -199,7 +199,7 @@ class Common {
 
     public static function checkExtensions()
     {
-        $requiredExtensions = ['curl'];
+        $requiredExtensions = array('curl');
         foreach ($requiredExtensions as $extension) {
             extension_loaded($extension);
         }
@@ -245,7 +245,7 @@ class Common {
         return admin_url('admin.php') . $uri;
     }
 
-    public static function getId(string $url) : ?string
+    public static function getId($url)
     {
         $url = trim($url);
         $parsedUrl = parse_url($url);
@@ -253,7 +253,7 @@ class Common {
             if ($parsedUrl['host'] == 'youtu.be') {
                 $id = str_replace('/', '', $parsedUrl['path']);
             } elseif ($parsedUrl['host'] == 'www.youtube.com') {
-                $params = [];
+                $params = array();
                 parse_str($parsedUrl['query'], $params);
                 if (isset($params['v'])) {
                     $id = $params['v'];
@@ -281,7 +281,7 @@ class Common {
         $homeUrl = get_home_url();
         $template = Template::getInstance();
         $template->setTemplate('UnavailableVideosMail.php');
-        $template->setParams(['posts' => $posts]);
+        $template->setParams(array('posts' => $posts));
         $message = $template->render();
         wp_mail($email, 'Youtube checker, ' . $homeUrl, $message);
     }

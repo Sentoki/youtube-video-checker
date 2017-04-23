@@ -8,9 +8,9 @@ use PetrovEgor\YoutubePlugins\YoutubePluginAbstract;
 
 abstract class ContentSourceAbstract extends SingletonAbstract
 {
-    abstract function getAllObjects() : array;
+    abstract function getAllObjects();
 
-    public function isNeedCheckSource($source): bool
+    public function isNeedCheckSource($source)
     {
         return Common::isNeedCheckPost($source);
     }

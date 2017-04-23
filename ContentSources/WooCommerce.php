@@ -8,9 +8,9 @@ class WooCommerce extends ContentSourceAbstract
 {
     public static $instance;
 
-    public function getAllObjects(): array
+    public function getAllObjects()
     {
-        $products = get_posts(['post_type' => 'product']);
+        $products = get_posts(array('post_type' => 'product'));
         return $products;
     }
 }

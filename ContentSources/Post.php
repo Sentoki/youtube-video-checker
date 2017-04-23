@@ -9,9 +9,9 @@ class Post extends ContentSourceAbstract
     /**
      * @return \WP_Post[]
      */
-    public function getAllObjects() : array
+    public function getAllObjects()
     {
-        $posts = get_posts(['numberposts' => -1]);
+        $posts = get_posts(array('numberposts' => -1));
         return $posts;
     }
 }

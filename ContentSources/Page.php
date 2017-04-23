@@ -11,7 +11,7 @@ class Page extends ContentSourceAbstract
     /**
      * @return array
      */
-    public function getAllObjects(): array
+    public function getAllObjects()
     {
         $pages = get_pages();
         return $pages;

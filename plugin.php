@@ -34,20 +34,20 @@ use PetrovEgor\YoutubePlugins\YoutubePluginAbstract;
  */
 add_action('search-videos-in-posts', 'searchVideosInPost');
 add_action('check-by-api', 'checkByApi');
-add_action('admin_notices', [Common::class, 'notifyIfNotConfigured']);
+add_action('admin_notices', array('PetrovEgor\Common', 'notifyIfNotConfigured'));
 
 /*
  * Cron actions and filters
  */
-add_action('youtube-checker-cron', [Cron::class, 'cron']);
-add_filter('cron_schedules', [Cron::class, 'everyTenSecondsInterval']);
+add_action('youtube-checker-cron', array('PetrovEgor\Cron', 'cron'));
+add_filter('cron_schedules', array('PetrovEgor\Cron', 'everyTenSecondsInterval'));
 
 /*
  * When post or page or WooCommerce product deleted, need delete record about videos
  */
-add_action('delete_post', [Database::class, 'deleteVideoRecordForPost']);
+add_action('delete_post', array('PetrovEgor\Database', 'deleteVideoRecordForPost'));
 
-register_activation_hook(__FILE__, [\PetrovEgor\Database::class, 'updateSchema']);
+register_activation_hook(__FILE__, array('PetrovEgor\Database', 'updateSchema'));
 
 $checkFreq = get_option(Common::SETTINGS_CHECK_FREQ);
 if (isset($checkFreq)) {
@@ -82,12 +82,12 @@ function indexPage()
     $availableCounter = Common::getAvailableVideoLabelCounter();
     $unavailableCounter = Common::getUnavailableVideoLabelCounter();
 
-    $template->setParams([
+    $template->setParams(array(
         'lastCheck' => $lastCheck,
         'nextScheduled' => $nextScheduled,
         'availableCounter' => $availableCounter,
         'unavailableCounter' => $unavailableCounter,
-    ]);
+    ));
     $template->render();
 
 }
@@ -100,7 +100,7 @@ function allVideos()
     $pagesNumber = Pagination::getAvailablePagesNumber();
     $currentPage = Pagination::getCurrentPage();
     $paginationLinks = paginate_links(
-        [
+        array(
             'base' => add_query_arg('pagination', '%#%'),
             'format' => '',
             'prev_text' => __('« Previous'),
@@ -108,13 +108,13 @@ function allVideos()
             'total' => $pagesNumber,
             'current' => $currentPage,
 //            'type' => 'array'
-        ]);
-    $template->setParams([
+        ));
+    $template->setParams(array(
         'posts' => $posts,
         'pagesNumber' => $pagesNumber,
         'currentPage' => $currentPage,
         'paginationLinks' => $paginationLinks,
-    ]);
+    ));
     $template->render();
 }
 
@@ -126,7 +126,7 @@ function unavailableVideos()
     $pagesNumber = Pagination::getUnavailablePagesNumber();
     $currentPage = Pagination::getCurrentPage();
     $paginationLinks = paginate_links(
-        [
+        array(
             'base' => add_query_arg('pagination', '%#%'),
             'format' => '',
             'prev_text' => __('« Previous'),
@@ -134,13 +134,13 @@ function unavailableVideos()
             'total' => $pagesNumber,
             'current' => $currentPage,
 //            'type' => 'array'
-        ]);
-    $template->setParams([
+        ));
+    $template->setParams(array(
         'posts' => $posts,
         'pagesNumber' => $pagesNumber,
         'currentPage' => $currentPage,
         'paginationLinks' => $paginationLinks,
-    ]);
+    ));
     $template->render();
 }
 
@@ -148,7 +148,7 @@ function settings()
 {
     $template = \PetrovEgor\templates\Template::getInstance();
     $template->setTemplate('Settings.php');
-    $params = [];
+    $params = array();
 
     if (!empty($_POST) && isset($_POST['api_key']) && isset($_POST['sync_frequency'])) {
         if (!Common::isVideoAvailable('jNQXAC9IVRw', $_POST['api_key'])) {
@@ -237,7 +237,7 @@ function searchVideosInPost($attr)
 function checkByApi($attr)
 {
     try {
-        $sources = [];
+        $sources = array();
         /** @var ContentSourceAbstract $contentSource */
         foreach (Common::$supportedContentSources as $contentSource) {
             /** @var ContentSourceAbstract $source */

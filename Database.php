@@ -37,7 +37,8 @@ CREATE TABLE {$wpdb->prefix}youtube_check_history (
     public static function markUnavailableVideo($post)
     {
         global $wpdb;
-        $time = (new \DateTime('now'))->format('Y-m-d H:i:s');
+        $time = new \DateTime('now');
+        $time = $time->format('Y-m-d H:i:s');
         $table = $wpdb->prefix.'posts_with_videos';
         $wpdb->query(
             "insert into {$table} (post_id, has_unavailiable, check_at)
@@ -51,7 +52,8 @@ CREATE TABLE {$wpdb->prefix}youtube_check_history (
     public static function markAvailableVideo($post)
     {
         global $wpdb;
-        $time = (new \DateTime('now'))->format('Y-m-d H:i:s');
+        $time = new \DateTime('now');
+        $time = $time->format('Y-m-d H:i:s');
         $table = $wpdb->prefix.'posts_with_videos';
         $wpdb->query(
             "insert into {$table} (post_id, has_availiable, check_at)
@@ -136,11 +138,10 @@ CREATE TABLE {$wpdb->prefix}youtube_check_history (
     public static function deleteVideoRecordForPost($post_id)
     {
         global $wpdb;
-        $break = 1;
         try {
             $wpdb->delete(
                 "{$wpdb->prefix}posts_with_videos",
-                ['post_id' => $post_id]
+                array('post_id' => $post_id)
             );
         } catch (\Exception $exception) {
             $break = 1;
@@ -153,7 +154,7 @@ CREATE TABLE {$wpdb->prefix}youtube_check_history (
         $wpdb->query("insert into {$wpdb->prefix}youtube_check_history () VALUES ()");
     }
 
-    public static function getIntervalString(\DateTime $timeFromNow) : ?string
+    public static function getIntervalString(\DateTime $timeFromNow)
     {
         if ($timeFromNow !== null) {
             $now = new \DateTime(current_time('mysql'));
@@ -218,7 +219,7 @@ CREATE TABLE {$wpdb->prefix}youtube_check_history (
         return $diffString;
     }
 
-    public static function getNextCheckTime() : ?\DateTime
+    public static function getNextCheckTime()
     {
         $nextScheduled = \DateTime::createFromFormat(
             'U',

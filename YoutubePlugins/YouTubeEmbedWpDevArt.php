@@ -15,6 +15,11 @@ class YouTubeEmbedWpDevArt extends YoutubePluginAbstract
 
     protected $tagName = 'wpdevart_youtube';
 
+    public static function className()
+    {
+        return 'PetrovEgor\YoutubePlugins\YouTubeEmbedWpDevArt';
+    }
+
     public function shortCodeHandler($attr, $content = '')
     {
         global $youtubeCheckerCurrentPost;

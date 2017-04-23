@@ -17,6 +17,11 @@ class YoutubeWidgetResponsive extends YoutubePluginAbstract
 
     protected $tagName = 'youtube';
 
+    public static function className()
+    {
+        return 'PetrovEgor\YoutubePlugins\YoutubeWidgetResponsive';
+    }
+
     public function shortCodeHandler($attr, $content = '')
     {
         global $youtubeCheckerCurrentPost;
