@@ -4,15 +4,18 @@
  *
  * @package YoutubeVideoChecker
  * @author Egor Petrov
+ * @license GPL-2.0+
  *
  * @wordpress-plugin
  * Plugin Name: Youtube video checker
  * Plugin URI: http://hayate.ru
- * Description: This plugin finds youtube video ids in posts, pages and WooCommerce products and send request to youtube API that check - does that videos still available. If video became unavailable, plugin show notifications about that.
+ * Description: This plugin finds youtube video ids in posts, pages and WooCommerce products and send request to youtube API that check - does this videos still available. If video became unavailable, plugin show notifications about that.
  * Version 1.0.0
  * Author: Egor Petrov
  * Author URI: http://hayate.ru
  * Text Domain: youtube-video-checker
+ * License: GPL-2.0+
+ * License URI: http://www.gnu.org/licenses/gpl-2.0.txt
  */
 
 
