@@ -218,14 +218,18 @@ CREATE TABLE {$wpdb->prefix}youtube_check_history (
         return $diffString;
     }
 
-    public static function getNextCheckTime()
+    public static function getNextCheckTime() : ?\DateTime
     {
         $nextScheduled = \DateTime::createFromFormat(
             'U',
             wp_next_scheduled('youtube-checker-cron')
         );
-        $gmtOffset = get_option('gmt_offset');
-        $nextScheduled->modify("+$gmtOffset hour");
-        return $nextScheduled;
+        if ($nextScheduled) {
+            $gmtOffset = get_option('gmt_offset');
+            $nextScheduled->modify("+$gmtOffset hour");
+            return $nextScheduled;
+        } else {
+            return null;
+        }
     }
 }

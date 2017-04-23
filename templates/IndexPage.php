@@ -12,7 +12,13 @@ $params = $template->getParams();
 </div>
 <div class="notice notice-info inline">
     <p>
-        Next check: <?=$params['nextScheduled']?>
+        Next check: <?php
+        if (is_null($params['nextScheduled'])) {
+            echo "not planned";
+        } else {
+            echo  $params['nextScheduled']->format('Y-m-d H:i:s');
+        }
+        ?>
     </p>
 </div>
 <div class="notice notice-success">

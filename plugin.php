@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name: Youtube video checker
  * Plugin URI: http://hayate.ru
- * Description: This plugin finds youtube video ids on posts and send request to youtube API that check - does that videos still available. If video became unavailable, plugin send notifications about that.
+ * Description: This plugin finds youtube video ids in posts, pages and WooCommerce products and send request to youtube API that check - does that videos still available. If video became unavailable, plugin show notifications about that.
  * Version 1.0.0
  * Author: Egor Petrov
  * Author URI: http://hayate.ru
@@ -26,12 +26,12 @@ use PetrovEgor\Cron;
 use PetrovEgor\Pagination;
 use PetrovEgor\YoutubePlugins\YoutubePluginAbstract;
 
-$break = 1;
 /*
  * Adding new actions
  */
 add_action('search-videos-in-posts', 'searchVideosInPost');
 add_action('check-by-api', 'checkByApi');
+add_action('admin_notices', [Common::class, 'notifyIfNotConfigured']);
 
 /*
  * Cron actions and filters
@@ -81,7 +81,7 @@ function indexPage()
 
     $template->setParams([
         'lastCheck' => $lastCheck,
-        'nextScheduled' => $nextScheduled->format('Y-m-d H:i:s'),
+        'nextScheduled' => $nextScheduled,
         'availableCounter' => $availableCounter,
         'unavailableCounter' => $unavailableCounter,
     ]);
@@ -159,6 +159,7 @@ function settings()
 
             wp_unschedule_event(time(), 'ten_seconds', 'youtube-checker-cron');
             wp_schedule_event(time(), $_POST['sync_frequency'], 'youtube-checker-cron');
+            echo "<meta http-equiv='refresh' content='0'>";
         }
     }
     $apiKey = get_option(Common::SETTINGS_API_KEY);
@@ -177,7 +178,9 @@ $menuIndex = function() {
         'Youtube checker',
         'manage_options',
         'youtube-checker',
-        'indexPage');
+        'indexPage',
+        'dashicons-yes'
+    );
     $availableLabelCounter = Common::getAvailableVideoLabelCounterHtml();
     add_submenu_page(
         'youtube-checker',

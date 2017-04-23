@@ -285,4 +285,24 @@ class Common {
         $message = $template->render();
         wp_mail($email, 'Youtube checker, ' . $homeUrl, $message);
     }
+
+    public static function notifyIfNotConfigured()
+    {
+        $apiKey = get_option(Common::SETTINGS_API_KEY);
+        if(!$apiKey) {
+            echo '<div class="notice notice-warning">
+        <p>
+    Youtube checker: Google API key not set.
+        </p>
+    </div>';
+        }
+        $checkFreq = get_option(Common::SETTINGS_CHECK_FREQ);
+        if(!$checkFreq) {
+            echo '<div class="notice notice-warning">
+        <p>
+    Youtube checker: search and check videos don\'t scheduled. 
+        </p>
+    </div>';
+        }
+    }
 }
