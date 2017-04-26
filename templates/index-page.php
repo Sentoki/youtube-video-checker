@@ -3,6 +3,8 @@
 $template = \PetrovEgor\templates\Template::get_instance();
 $params = $template->get_params();
 
+$admin_url = admin_url();
+
 ?>
 <h1>Main info</h1>
 <div class="notice notice-info inline">
@@ -37,6 +39,6 @@ $params = $template->get_params();
 if ( \PetrovEgor\common::is_develop_mode() ) {
 ?>
 <br>
-<a class="button-secondary" href='/wp-admin/admin.php?page=youtube-checker&youtube_checker_action=search-videos-in-posts' title="Search videos in posts">Search videos in posts</a>
-	<a class="button-secondary" href='/wp-admin/admin.php?page=youtube-checker&youtube_checker_action=check-by-api' title="Check videos by API">Check videos by API</a>
+<a class="button-secondary" href='<?php echo esc_html( $admin_url ); ?>admin.php?page=youtube-checker&youtube_checker_action=search-videos-in-posts' title="Search videos in posts">Search videos in posts</a>
+	<a class="button-secondary" href='<?php echo esc_html( $admin_url ); ?>admin.php?page=youtube-checker&youtube_checker_action=check-by-api' title="Check videos by API">Check videos by API</a>
 <?php } ?>
