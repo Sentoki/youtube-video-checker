@@ -3,6 +3,8 @@
 $template = \PetrovEgor\templates\Template::get_instance();
 $params = $template->get_params();
 
+$admin_url = admin_url();
+
 if ( $params['is_wrong_api_key'] ) {
 ?>
 	<div class="notice notice-warning">
@@ -14,7 +16,7 @@ if ( $params['is_wrong_api_key'] ) {
 }
 ?>
 <h1>Plugin settings</h1>
-<form action="/wp-admin/admin.php?page=youtube-checker-settings" method="post">
+<form action="<?php echo esc_html( $admin_url ); ?>admin.php?page=youtube-checker-settings" method="post">
 	<?php
 	$value = isset( $params['apiKey'] ) ? $params['apiKey'] : '';
 	$hour_checked = '';
