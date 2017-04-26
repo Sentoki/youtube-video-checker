@@ -8,7 +8,7 @@ use PetrovEgor\Singleton_Abstract;
 
 abstract class Youtube_Plugin_Abstract extends Singleton_Abstract {
 	protected $tag_name;
-	protected $short_code_method = 'shortCodeHandler';
+	protected $short_code_method = 'short_code_handler';
 
 	public static function class_name() {
 		return 'PetrovEgor\YoutubePlugins\Youtube_Plugin_Abstract';

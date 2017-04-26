@@ -37,6 +37,7 @@ CREATE TABLE {$wpdb->prefix}youtube_check_history (
 		$time = new \DateTime( 'now' );
 		$time = $time->format( 'Y-m-d H:i:s' );
 
+		Logger::info( 'mark unavailable for : ' . $post->ID . ', prefix: ' . $wpdb->prefix );
 		$wpdb->query(
 			$wpdb->prepare("insert into {$wpdb->prefix}posts_with_videos (post_id, has_unavailiable, check_at)
 				  VALUES (%d, TRUE, %s) ON DUPLICATE KEY UPDATE has_unavailiable=TRUE, check_at=%s",
@@ -52,6 +53,8 @@ CREATE TABLE {$wpdb->prefix}youtube_check_history (
 		global $wpdb;
 		$time = new \DateTime( 'now' );
 		$time = $time->format( 'Y-m-d H:i:s' );
+
+		Logger::info( 'mark available for : ' . $post->ID . ', prefix: ' . $wpdb->prefix );
 		$wpdb->query(
 			$wpdb->prepare("insert into {$wpdb->prefix}posts_with_videos (post_id, has_availiable, check_at)
 				  VALUES (%d, TRUE, %s) ON DUPLICATE KEY UPDATE has_availiable=TRUE, check_at=%s",
