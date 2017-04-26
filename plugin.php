@@ -18,264 +18,151 @@
  * License URI: http://www.gnu.org/licenses/gpl-2.0.txt
  */
 
+define('WP_DEBUG', true);
 
 require_once 'autoload.php';
 
-use PetrovEgor\ContentSources\ContentSourceAbstract;
+use PetrovEgor\ContentSources\Content_Source_Abstract;
 use PetrovEgor\Database;
 use PetrovEgor\Logger;
 use PetrovEgor\Common;
 use PetrovEgor\Cron;
 use PetrovEgor\Pagination;
-use PetrovEgor\YoutubePlugins\YoutubePluginAbstract;
+use PetrovEgor\YoutubePlugins\Youtube_Plugin_Abstract;
 
 /*
  * Adding new actions
  */
-add_action('search-videos-in-posts', 'searchVideosInPost');
-add_action('check-by-api', 'checkByApi');
-add_action('admin_notices', array('PetrovEgor\Common', 'notifyIfNotConfigured'));
+add_action( Common::SEARCH_VIDEOS_IN_POSTS_HOOK, 'search_videos_in_post' );
+add_action( Common::CHECK_BY_API_HOOK, 'checkByApi' );
+add_action( 'admin_notices', array( 'PetrovEgor\Common', 'notify_if_not_configured' ) );
 
 /*
  * Cron actions and filters
  */
-add_action('youtube-checker-cron', array('PetrovEgor\Cron', 'cron'));
-add_filter('cron_schedules', array('PetrovEgor\Cron', 'everyTenSecondsInterval'));
+add_action( 'youtube-checker-cron', array( 'PetrovEgor\Cron', 'cron' ) );
+add_filter( 'cron_schedules', array( 'PetrovEgor\Cron', 'everyTenSecondsInterval' ) );
 
 /*
  * When post or page or WooCommerce product deleted, need delete record about videos
  */
-add_action('delete_post', array('PetrovEgor\Database', 'deleteVideoRecordForPost'));
+add_action( 'delete_post', array( 'PetrovEgor\Database', 'delete_video_record_for_post' ) );
 
-register_activation_hook(__FILE__, array('PetrovEgor\Database', 'updateSchema'));
+register_activation_hook( __FILE__, array( 'PetrovEgor\Database', 'update_schema' ) );
 
-$checkFreq = get_option(Common::SETTINGS_CHECK_FREQ);
-if (isset($checkFreq)) {
-    Logger::info('checkFreq set: ' . $checkFreq);
-    $nextScheduled = wp_next_scheduled('youtube-checker-cron');
-    if (!$nextScheduled) {
-        Logger::info('not scheduled');
-        wp_schedule_event(time(), $checkFreq, 'youtube-checker-cron');
-//        wp_unschedule_event(time(), 'ten_seconds', 'youtube-checker-cron');
-    } else {
-        $nextScheduled = new DateTime('@' . $nextScheduled);
-        Logger::info('scheduled: ' . $nextScheduled->format('Y-m-d H:i:s'));
-    }
+$check_freq = get_option( common::SETTINGS_CHECK_FREQ );
+if ( isset( $check_freq ) ) {
+	Logger::info( 'checkFreq set: ' . $check_freq );
+	$next_scheduled = wp_next_scheduled( 'youtube-checker-cron' );
+	if ( ! $next_scheduled ) {
+		Logger::info( 'not scheduled' );
+		wp_schedule_event( time(), $check_freq, 'youtube-checker-cron' );
+	} else {
+		$next_scheduled = new DateTime( '@' . $next_scheduled );
+		Logger::info( 'scheduled: ' . $next_scheduled->format( 'Y-m-d H:i:s' ) );
+	}
 } else {
-    Logger::info('checkFreq NOT set');
+	Logger::info( 'checkFreq NOT set' );
 }
 
-function indexPage()
-{
-    switch ($_GET['youtube_checker_action']) {
-        case 'search-videos-in-posts':
-            do_action('search-videos-in-posts');
-            break;
-        case 'check-by-api':
-            do_action('check-by-api');
-            break;
-    }
-    $template = \PetrovEgor\templates\Template::getInstance();
-    $template->setTemplate('IndexPage.php');
-    $lastCheck = Database::getLastCheckTime();
-    $nextScheduled = Database::getNextCheckTime();
-    $availableCounter = Common::getAvailableVideoLabelCounter();
-    $unavailableCounter = Common::getUnavailableVideoLabelCounter();
-
-    $template->setParams(array(
-        'lastCheck' => $lastCheck,
-        'nextScheduled' => $nextScheduled,
-        'availableCounter' => $availableCounter,
-        'unavailableCounter' => $unavailableCounter,
-    ));
-    $template->render();
-
-}
-
-function allVideos()
-{
-    $posts = \PetrovEgor\Database::getPostsWithAvailableVideos();
-    $template = \PetrovEgor\templates\Template::getInstance();
-    $template->setTemplate('AvailableVideos.php');
-    $pagesNumber = Pagination::getAvailablePagesNumber();
-    $currentPage = Pagination::getCurrentPage();
-    $paginationLinks = paginate_links(
-        array(
-            'base' => add_query_arg('pagination', '%#%'),
-            'format' => '',
-            'prev_text' => __('« Previous'),
-            'next_text' => __('Next »'),
-            'total' => $pagesNumber,
-            'current' => $currentPage,
-//            'type' => 'array'
-        ));
-    $template->setParams(array(
-        'posts' => $posts,
-        'pagesNumber' => $pagesNumber,
-        'currentPage' => $currentPage,
-        'paginationLinks' => $paginationLinks,
-    ));
-    $template->render();
-}
-
-function unavailableVideos()
-{
-    $posts = \PetrovEgor\Database::getPostsWithUnavailableVideos();
-    $template = \PetrovEgor\templates\Template::getInstance();
-    $template->setTemplate('UnavailableVideos.php');
-    $pagesNumber = Pagination::getUnavailablePagesNumber();
-    $currentPage = Pagination::getCurrentPage();
-    $paginationLinks = paginate_links(
-        array(
-            'base' => add_query_arg('pagination', '%#%'),
-            'format' => '',
-            'prev_text' => __('« Previous'),
-            'next_text' => __('Next »'),
-            'total' => $pagesNumber,
-            'current' => $currentPage,
-//            'type' => 'array'
-        ));
-    $template->setParams(array(
-        'posts' => $posts,
-        'pagesNumber' => $pagesNumber,
-        'currentPage' => $currentPage,
-        'paginationLinks' => $paginationLinks,
-    ));
-    $template->render();
-}
-
-function settings()
-{
-    $template = \PetrovEgor\templates\Template::getInstance();
-    $template->setTemplate('Settings.php');
-    $params = array();
-
-    if (!empty($_POST) && isset($_POST['api_key']) && isset($_POST['sync_frequency'])) {
-        if (!Common::isVideoAvailable('jNQXAC9IVRw', $_POST['api_key'])) {
-            $params['is_wrong_api_key'] = true;
-            //wrong api key
-        } else {
-            delete_option(Common::SETTINGS_API_KEY);
-            add_option(Common::SETTINGS_API_KEY, $_POST['api_key']);
-            delete_option(Common::SETTINGS_CHECK_FREQ);
-            add_option(Common::SETTINGS_CHECK_FREQ, $_POST['sync_frequency']);
-
-            wp_unschedule_event(time(), 'ten_seconds', 'youtube-checker-cron');
-            wp_schedule_event(time(), $_POST['sync_frequency'], 'youtube-checker-cron');
-            echo "<meta http-equiv='refresh' content='0'>";
-        }
-    }
-    $apiKey = get_option(Common::SETTINGS_API_KEY);
-    $checkFreq = get_option(Common::SETTINGS_CHECK_FREQ);
-    if (isset($apiKey) && isset($checkFreq)) {
-        $params['apiKey'] = $apiKey;
-        $params['checkFreq'] = $checkFreq;
-        $template->setParams($params);
-    }
-    $template->render();
-}
-
-$menuIndex = function() {
-    add_menu_page(
-        'Youtube checker',
-        'Youtube checker',
-        'manage_options',
-        'youtube-checker',
-        'indexPage',
-        'dashicons-yes'
-    );
-    $availableLabelCounter = Common::getAvailableVideoLabelCounterHtml();
-    add_submenu_page(
-        'youtube-checker',
-        'Available videos',
-        'Available videos' . $availableLabelCounter,
-        'manage_options',
-        'youtube-checker-all-videos',
-            'allVideos');
-    $unavailableLabelCounter = Common::getUnavailableVideoLabelCounterHtml();
-    add_submenu_page(
-        'youtube-checker',
-        'Unavailable videos',
-        'Unavailable videos' . $unavailableLabelCounter,
-        'manage_options',
-        'youtube-checker-unavailable-videos',
-        'unavailableVideos');
-    add_submenu_page(
-        'youtube-checker',
-        'Settings',
-        'Settings',
-        'manage_options',
-        'youtube-checker-settings',
-        'settings');
+$menu_index = function() {
+	add_menu_page(
+		'Youtube checker',
+		'Youtube checker',
+		'manage_options',
+		'youtube-checker',
+		array( 'PetrovEgor\Pages', 'index_page' ),
+		'dashicons-yes'
+	);
+	$available_label_counter = common::get_available_video_label_counter_html();
+	add_submenu_page(
+		'youtube-checker',
+		'Available videos',
+		'Available videos' . $available_label_counter,
+		'manage_options',
+		'youtube-checker-all-videos',
+		array( 'PetrovEgor\Pages', 'all_videos' )
+	);
+	$unavailable_label_counter = common::get_unavailable_video_label_counter_html();
+	add_submenu_page(
+		'youtube-checker',
+		'Unavailable videos',
+		'Unavailable videos' . $unavailable_label_counter,
+		'manage_options',
+		'youtube-checker-unavailable-videos',
+		array( 'PetrovEgor\Pages', 'unavailable_videos' )
+	);
+	add_submenu_page(
+		'youtube-checker',
+		'Settings',
+		'Settings',
+		'manage_options',
+		'youtube-checker-settings',
+		array( 'PetrovEgor\Pages', 'settings' )
+	);
 };
 
-add_action('admin_menu', $menuIndex);
+add_action( 'admin_menu', $menu_index );
 
-function searchVideosInPost($attr)
-{
-    /** @var ContentSourceAbstract $contentSource */
-    foreach (Common::$supportedContentSources as $contentSource) {
-            /** @var ContentSourceAbstract $source */
-            $source = $contentSource::getInstance();
-            $objects = $source->getAllObjects();
-            foreach ($objects as $object) {
-                if ($source->isNeedCheckSource($object)) {
-                    /** @var YoutubePluginAbstract $supportedPlugin */
-                    foreach (Common::$supportedPlugins as $supportedPlugin) {
-                        /** @var YoutubePluginAbstract $plugin */
-                        $plugin = $supportedPlugin::getInstance();
-                        if($plugin->hasShorcode($object)) {
-                            $plugin->saveYoutubeIds($object);
-                        }
-                    }
-                }
-                Common::updateLastCheckTime($object);
-            }
-        }
+function search_videos_in_post( $attr ) {
+	/** @var Content_Source_Abstract $content_source */
+	foreach ( Common::$supported_content_sources as $content_source ) {
+		/** @var Content_Source_Abstract $source */
+		$source = $content_source::get_instance();
+		$objects = $source->get_all_objects();
+		foreach ( $objects as $object ) {
+			if ( $source->is_need_check_source( $object ) ) {
+				/** @var Youtube_Plugin_Abstract $supported_plugin */
+				foreach ( common::$supported_plugins as $supported_plugin ) {
+					/** @var Youtube_Plugin_Abstract $plugin */
+					$plugin = $supported_plugin::get_instance();
+					if ( $plugin->has_shortcode( $object ) ) {
+						$plugin->save_youtube_ids( $object );
+					}
+				}
+			}
+			common::update_last_check_time( $object );
+		}
+	}
 }
 
-function checkByApi($attr)
-{
-    try {
-        $sources = array();
-        /** @var ContentSourceAbstract $contentSource */
-        foreach (Common::$supportedContentSources as $contentSource) {
-            /** @var ContentSourceAbstract $source */
-            $source = $contentSource::getInstance();
-            $sources = array_merge($sources, $source->getAllObjects());
-        }
-        /** @var WP_Post $post */
-        foreach ($sources as $post) {
-            $isHaveUnavailableVideo = false;
-            $isHaveAvailableVideo = false;
-            \PetrovEgor\Database::unmarkUnavailableVideo($post);
-            \PetrovEgor\Database::unmarkAvailableVideo($post);
-            $ids = Common::getYoutubeIdsByPost($post);
-            Common::resetUnavailableVideoListForPost($post);
-            Common::resetAvailableVideoListForPost($post);
-            foreach ($ids as $id) {
-                if (!Common::isVideoAvailable($id)) {
-                    $isHaveUnavailableVideo = true;
-                    Common::reportVideoUnavailable($post, $id);
-                } else {
-                    $isHaveAvailableVideo = true;
-                    Common::reportVideoAvailable($post, $id);
-                }
-            }
-            if ($isHaveUnavailableVideo) {
-                \PetrovEgor\Database::markUnavailableVideo($post);
-            }
-            if ($isHaveAvailableVideo) {
-                \PetrovEgor\Database::markAvailableVideo($post);
-            }
-        }
-    } catch (\Exception $exception) {
-        Logger::info($exception->getMessage(), 'errors.log');
-        throw $exception;
-    }
-    Database::saveCheckTime();
-//    $counter = Common::getUnavailableVideoLabelCounter();
-//    if ((int)$counter > 0) {
-//        Common::sendEmailNotification();
-//    }
+function checkByApi( $attr ) {
+	try {
+		$sources = array();
+		/** @var Content_Source_Abstract $content_source */
+		foreach ( common::$supported_content_sources as $content_source ) {
+			/** @var Content_Source_Abstract $source */
+			$source = $content_source::get_instance();
+			$sources = array_merge( $sources, $source->get_all_objects() );
+		}
+		/** @var WP_Post $post */
+		foreach ( $sources as $post ) {
+			$is_have_unavailable_video = false;
+			$is_have_available_video = false;
+			\PetrovEgor\Database::unmark_unavailable_video( $post );
+			\PetrovEgor\Database::unmark_available_video( $post );
+			$ids = common::get_youtube_ids_by_post( $post );
+			Common::reset_unavailable_video_list_for_post( $post );
+			Common::reset_available_video_list_for_post( $post );
+			foreach ( $ids as $id ) {
+				if ( ! Common::is_video_available( $id ) ) {
+					$is_have_unavailable_video = true;
+					Common::report_video_unavailable( $post, $id );
+				} else {
+					$is_have_available_video = true;
+					Common::report_video_available( $post, $id );
+				}
+			}
+			if ( $is_have_unavailable_video ) {
+				\PetrovEgor\Database::mark_unavailable_video( $post );
+			}
+			if ( $is_have_available_video ) {
+				\PetrovEgor\Database::mark_available_video( $post );
+			}
+		}
+	} catch ( \Exception $exception ) {
+		Logger::info( $exception->getMessage(), 'errors.log' );
+		throw $exception;
+	}
+	Database::save_check_time();
 }
