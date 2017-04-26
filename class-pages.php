@@ -94,7 +94,7 @@ class Pages {
 				delete_option( common::SETTINGS_CHECK_FREQ );
 				add_option( common::SETTINGS_CHECK_FREQ, $_POST['sync_frequency'] );
 
-				wp_unschedule_event( time(), 'ten_seconds', 'youtube-checker-cron' );
+				wp_unschedule_event( time(), $_POST['sync_frequency'], 'youtube-checker-cron' );
 				wp_schedule_event( time(), $_POST['sync_frequency'], 'youtube-checker-cron' );
 				echo "<meta http-equiv='refresh' content='0'>";
 			}

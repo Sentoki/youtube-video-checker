@@ -3,7 +3,6 @@
 namespace PetrovEgor;
 
 class Cron {
-
 	public function cron() {
 		$begin = microtime( true );
 		Logger::info( 'run cron task' );

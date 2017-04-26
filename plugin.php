@@ -18,8 +18,6 @@
  * License URI: http://www.gnu.org/licenses/gpl-2.0.txt
  */
 
-define('WP_DEBUG', true);
-
 require_once 'autoload.php';
 
 use PetrovEgor\ContentSources\Content_Source_Abstract;
@@ -41,7 +39,6 @@ add_action( 'admin_notices', array( 'PetrovEgor\Common', 'notify_if_not_configur
  * Cron actions and filters
  */
 add_action( 'youtube-checker-cron', array( 'PetrovEgor\Cron', 'cron' ) );
-add_filter( 'cron_schedules', array( 'PetrovEgor\Cron', 'everyTenSecondsInterval' ) );
 
 /*
  * When post or page or WooCommerce product deleted, need delete record about videos

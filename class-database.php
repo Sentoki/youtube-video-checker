@@ -165,10 +165,11 @@ CREATE TABLE {$wpdb->prefix}youtube_check_history (
 
 	public static function save_check_time() {
 		global $wpdb;
+		$now = new \DateTime( 'now' );
 		$wpdb->query(
 			$wpdb->prepare(
-				"insert into {$wpdb->prefix}youtube_check_history () VALUES ()",
-				array()
+				"insert into {$wpdb->prefix}youtube_check_history (check_at) VALUES (%s)",
+				array( $now->format( 'Y-m-d H:i:s' ) )
 			)
 		);
 	}
@@ -212,7 +213,7 @@ CREATE TABLE {$wpdb->prefix}youtube_check_history (
 		);
 		if ( null !== $last_check_time ) {
 			$last_check_time = new \DateTime( $last_check_time->check_at );
-			$now = new \DateTime( current_time( 'mysql' ) );
+			$now = new \DateTime( 'now' );
 			$diff = $now->diff( $last_check_time );
 			$diff_string = '';
 			if ( 0 !== (int) $diff->y ) {
