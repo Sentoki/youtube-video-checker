@@ -10,7 +10,7 @@
  * Plugin Name: Youtube video checker
  * Plugin URI: https://github.com/Sentoki/youtube-video-checker
  * Description: This plugin finds youtube video ids in posts, pages and WooCommerce products and send request to youtube API that check - does this videos still available. If video became unavailable, plugin show notifications about that.
- * Version 1.0.0
+ * Version: 1.0.0
  * Author: Egor Petrov
  * Author URI: http://hayate.ru
  * Text Domain: youtube-video-checker
