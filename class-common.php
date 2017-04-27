@@ -271,4 +271,12 @@ class Common {
 	</div>';
 		}
 	}
+
+	public static function donate_link( $plugin_meta, $plugin_path ) {
+		$plugin_path = explode( '/', $plugin_path );
+		if ( isset( $plugin_path[1] ) && 'youtube-video-checker.php' === $plugin_path[1] ) {
+			$plugin_meta[] = "&hearts; <a href='https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=JPVMUBVV23E9E'>Donate</a>";
+		}
+		return $plugin_meta;
+	}
 }
