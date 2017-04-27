@@ -213,27 +213,7 @@ CREATE TABLE {$wpdb->prefix}youtube_check_history (
 		);
 		if ( null !== $last_check_time ) {
 			$last_check_time = new \DateTime( $last_check_time->check_at );
-			$now = new \DateTime( 'now' );
-			$diff = $now->diff( $last_check_time );
-			$diff_string = '';
-			if ( 0 !== (int) $diff->y ) {
-				$diff_string .= "{$diff->y} year, ";
-			}
-			if ( 0 !== (int) $diff->m ) {
-				$diff_string .= "{$diff->m} month, ";
-			}
-			if ( 0 !== (int) $diff->d ) {
-				$diff_string .= "{$diff->d} day, ";
-			}
-			if ( 0 !== (int) $diff->h ) {
-				$diff_string .= "{$diff->h} hour, ";
-			}
-			if ( 0 !== (int) $diff->i ) {
-				$diff_string .= "{$diff->i} minutes, ";
-			}
-			if ( 0 !== (int) $diff->s ) {
-				$diff_string .= "{$diff->s} seconds ";
-			}
+			$diff_string = self::get_diff_string( $last_check_time );
 			$diff_string .= 'ago';
 		} else {
 			$diff_string = 'no checks was made';
@@ -248,11 +228,35 @@ CREATE TABLE {$wpdb->prefix}youtube_check_history (
 			wp_next_scheduled( 'youtube-checker-cron' )
 		);
 		if ( $next_scheduled ) {
-			$gmt_offset = get_option( 'gmt_offset' );
-			$next_scheduled->modify( "+$gmt_offset hour" );
-			return $next_scheduled;
+			$diff_string = self::get_diff_string( $next_scheduled );
+			return 'In ' . $diff_string;
 		} else {
 			return null;
 		}
+	}
+
+	private static function get_diff_string( $target_time ) {
+		$now = new \DateTime( 'now' );
+		$diff = $now->diff( $target_time );
+		$diff_string = '';
+		if ( 0 !== (int) $diff->y ) {
+			$diff_string .= "{$diff->y} year, ";
+		}
+		if ( 0 !== (int) $diff->m ) {
+			$diff_string .= "{$diff->m} month, ";
+		}
+		if ( 0 !== (int) $diff->d ) {
+			$diff_string .= "{$diff->d} day, ";
+		}
+		if ( 0 !== (int) $diff->h ) {
+			$diff_string .= "{$diff->h} hour, ";
+		}
+		if ( 0 !== (int) $diff->i ) {
+			$diff_string .= "{$diff->i} minutes, ";
+		}
+		if ( 0 !== (int) $diff->s ) {
+			$diff_string .= "{$diff->s} seconds ";
+		}
+		return $diff_string;
 	}
 }

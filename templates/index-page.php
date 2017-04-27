@@ -18,7 +18,7 @@ $admin_url = admin_url();
 		if ( is_null( $params['nextScheduled'] ) ) {
 			echo 'not planned';
 		} else {
-			echo esc_html( $params['nextScheduled']->format( 'Y-m-d H:i:s' ) );
+			echo esc_html( $params['nextScheduled'] );
 		}
 		?>
 	</p>
