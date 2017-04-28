@@ -1,19 +1,19 @@
 <?php
 /**
- * Youtube video checker
+ * Checker youtube videos
  *
- * @package YoutubeVideoChecker
+ * @package CheckerYoutubeVideos
  * @author Egor Petrov
  * @license GPL-2.0+
  *
  * @wordpress-plugin
- * Plugin Name: Youtube video checker
- * Plugin URI: http://hayate.ru
+ * Plugin Name: Checker youtube videos
+ * Plugin URI: https://github.com/Sentoki/youtube-video-checker
  * Description: This plugin finds youtube video ids in posts, pages and WooCommerce products and send request to youtube API that check - does this videos still available. If video became unavailable, plugin show notifications about that.
- * Version 1.0.0
+ * Version: 1.0.0
  * Author: Egor Petrov
  * Author URI: http://hayate.ru
- * Text Domain: youtube-video-checker
+ * Text Domain: checker-youtube-videos
  * License: GPL-2.0+
  * License URI: http://www.gnu.org/licenses/gpl-2.0.txt
  */
@@ -46,6 +46,11 @@ add_action( 'youtube-checker-cron', array( 'PetrovEgor\Cron', 'cron' ) );
 add_action( 'delete_post', array( 'PetrovEgor\Database', 'delete_video_record_for_post' ) );
 
 register_activation_hook( __FILE__, array( 'PetrovEgor\Database', 'update_schema' ) );
+
+/*
+ * Filters
+ */
+add_filter( 'plugin_row_meta', array( 'PetrovEgor\Common', 'donate_link' ), 10, 2 );
 
 $check_freq = get_option( common::SETTINGS_CHECK_FREQ );
 if ( isset( $check_freq ) ) {
