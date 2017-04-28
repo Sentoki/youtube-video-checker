@@ -84,18 +84,25 @@ class Pages {
 		$template->set_template( 'settings.php' );
 		$params = array();
 
-		if (!empty($_POST) && isset($_POST['api_key']) && isset($_POST['sync_frequency'])) {
-			if ( ! common::is_video_available( 'jNQXAC9IVRw', $_POST['api_key'] ) ) {
+		if (
+			! empty( $_POST ) &&
+			wp_verify_nonce( $_POST['_wpnonce'] ) === 1 &&
+			isset( $_POST['api_key'] ) &&
+			isset( $_POST['sync_frequency'] )
+		) {
+			$api_key = sanitize_text_field( strval( $_POST['api_key'] ) );
+			$sync_frequency = sanitize_text_field( strval( $_POST['sync_frequency'] ) );
+			if ( ! common::is_video_available( 'jNQXAC9IVRw', $api_key ) ) {
 				$params['is_wrong_api_key'] = true;
 				//wrong api key
 			} else {
 				delete_option( common::SETTINGS_API_KEY );
-				add_option( common::SETTINGS_API_KEY, $_POST['api_key'] );
+				add_option( common::SETTINGS_API_KEY, $api_key );
 				delete_option( common::SETTINGS_CHECK_FREQ );
-				add_option( common::SETTINGS_CHECK_FREQ, $_POST['sync_frequency'] );
+				add_option( common::SETTINGS_CHECK_FREQ, $sync_frequency );
 
-				wp_unschedule_event( time(), $_POST['sync_frequency'], 'youtube-checker-cron' );
-				wp_schedule_event( time(), $_POST['sync_frequency'], 'youtube-checker-cron' );
+				wp_unschedule_event( time(), $sync_frequency, 'youtube-checker-cron' );
+				wp_schedule_event( time(), $sync_frequency, 'youtube-checker-cron' );
 				echo "<meta http-equiv='refresh' content='0'>";
 			}
 		}

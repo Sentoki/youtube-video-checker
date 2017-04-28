@@ -55,6 +55,7 @@ if ( $params['is_wrong_api_key'] ) {
 			<input type="radio" name="sync_frequency" value="daily" <?php echo esc_html( $once_day_checked ); ?>/>
 			<span>Once a day</span>
 		</label>
+		<?php wp_nonce_field(); ?>
 	</fieldset>
 	<br>
 	<input class="button-primary" type="submit" name="Save settings" value="Save settings">
